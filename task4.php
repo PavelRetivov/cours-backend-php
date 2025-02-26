@@ -1,4 +1,11 @@
 <?php
+
+$STATUS_CODE = [
+    '200' => '200 OK',
+    '400' => '400 Bad Request',
+    '404' => '404 Not Found',
+    '500' => ' 500 Internal Server Error'
+];
 function readHttpLikeInput() {
     $f = fopen( 'php://stdin', 'r' );
     $store = "";
@@ -28,6 +35,7 @@ function outputHttpResponse($statuscode, $statusmessage, $headers, $body) {
 }
 
 function processHttpRequest($method, $uri, $headers, $body) {
+    global $STATUS_CODE;
     $statuscode = '200 OK';
 
     if($method != "POST"){
@@ -48,6 +56,14 @@ function processHttpRequest($method, $uri, $headers, $body) {
     $password = explode("=",$parsingBody[1])[1];
 
     $dbPasswords = file_get_contents("passwords.txt");
+
+    if($dbPasswords === false){
+        $statuscode = $STATUS_CODE['500'];
+        $statusmassage = 'not found';
+        outputHttpResponse($statuscode, $statusmassage, $headers, $body);
+        return;
+    }
+
     $parsingDbPasswords = explode("\n", $dbPasswords);
 
     $result = false;
