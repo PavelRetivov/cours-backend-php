@@ -30,7 +30,7 @@ if($dbInFile === false){
         <div class="counter">
             <h1> Page Visit Counter</h1>
             <p> You have visited this page:
-                <span> <strong><?= $counter ? $counter : $error ?></strong></span>
+                <span> <strong><?= $counter ?? $error ?></strong></span>
             </p>
         </div>
     </div>
