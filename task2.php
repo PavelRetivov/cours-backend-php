@@ -18,27 +18,27 @@ function readHttpLikeInput() {
 $contents = readHttpLikeInput();
 
 function parseTcpStringAsHttpRequest($string) {
-    $parsingContext = explode("\n", $string);
-    $method = '';
-    $uri = '';
+    $parsingContext = explode(PHP_EOL, $string);
     $headers = [];
     $body = '';
 
-    for($i = 0; $i < count($parsingContext); $i++) {
-        if($i == 0 ) {
-            $firstRow = explode(" ", $parsingContext[$i]);
-            $method = trim($firstRow[0]);
-            $uri = trim($firstRow[1]);
-            continue;
-        }
-        if(strpos($parsingContext[$i], ":")){
+    $firstRow = explode(" ", $parsingContext[0]);
+    $method = trim($firstRow[0]);
+    $uri = trim($firstRow[1]);
+
+    $exp = "/[:]/";
+    $i = 1;
+    for(; $i < count($parsingContext); $i++) {
+        if(preg_match($exp, $parsingContext[$i])){
             $newRow = explode(":", $parsingContext[$i]);
             $headerTitle = trim($newRow[0]);
             $headerBody = trim($newRow[1]);
             $headers[] = [$headerTitle, $headerBody];
             continue;
         }
-
+        break;
+    }
+    for(; $i < count($parsingContext); $i++) {
         if(str_starts_with($parsingContext[$i], 'bookId')){
             $body = $parsingContext[$i];
         }
