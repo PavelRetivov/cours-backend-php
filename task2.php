@@ -18,19 +18,19 @@ function readHttpLikeInput() {
 $contents = readHttpLikeInput();
 
 function parseTcpStringAsHttpRequest($string) {
-    $parsingContext = explode(PHP_EOL, $string);
+    $parsingContents = explode(PHP_EOL, $string);
     $headers = [];
     $body = '';
 
-    $firstRow = explode(" ", $parsingContext[0]);
+    $firstRow = explode(" ", $parsingContents[0]);
     $method = trim($firstRow[0]);
     $uri = trim($firstRow[1]);
 
     $exp = "/[:]/";
     $i = 1;
-    for(; $i < count($parsingContext); $i++) {
-        if(preg_match($exp, $parsingContext[$i])){
-            $newRow = explode(":", $parsingContext[$i]);
+    for(; $i < count($parsingContents); $i++) {
+        if(preg_match($exp, $parsingContents[$i])){
+            $newRow = explode(":", $parsingContents[$i]);
             $headerTitle = trim($newRow[0]);
             $headerBody = trim($newRow[1]);
             $headers[] = [$headerTitle, $headerBody];
@@ -38,9 +38,9 @@ function parseTcpStringAsHttpRequest($string) {
         }
         break;
     }
-    for(; $i < count($parsingContext); $i++) {
-        if(str_starts_with($parsingContext[$i], 'bookId')){
-            $body = $parsingContext[$i];
+    for(; $i < count($parsingContents); $i++) {
+        if(str_starts_with($parsingContents[$i], 'bookId')){
+            $body = $parsingContents[$i];
         }
     }
 
