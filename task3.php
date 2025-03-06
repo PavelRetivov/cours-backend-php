@@ -17,73 +17,61 @@ function readHttpLikeInput() {
 
 $contents = readHttpLikeInput();
 
-function outputHttpResponse($statuscode, $statusmessage, $headers, $body) {
+function outputHttpResponse($statusCode, $statusMessage, $headers, $body) {
 
-    echo "HTTP/1.1 $statuscode\n";
-    echo "Server: Apache/2.2.14 (Win32)\n";
-    echo "Connection: Closed\n";
-    echo "Content-Type: text/html; charset=utf-8\n";
-    echo "Content-Length: " . strlen($statusmessage) . "\n";
-    echo "\n$statusmessage" ;
+    echo "HTTP/1.1 $statusCode" . PHP_EOL;
+    echo "Server: Apache/2.2.14 (Win32)" . PHP_EOL;
+    echo "Connection: Closed" . PHP_EOL;
+    echo "Content-Type: text/html; charset=utf-8" . PHP_EOL;
+    echo "Content-Length: " . strlen($statusMessage)  . PHP_EOL;
+    echo  PHP_EOL . "$statusMessage" ;
 }
 
 function processHttpRequest($method, $uri, $headers, $body) {
-    $statuscode = '200 OK';
+
 
     if($method != "GET"){
-        $statuscode = '400 Bad Request';
-        $statusmassage = 'not found';
-        outputHttpResponse($statuscode, $statusmassage, $headers, $body);
+        outputHttpResponse('400 Bad Request', 'not found', $headers, $body);
         return;
     }
     if(!str_starts_with($uri, "/sum?nums=")){
-        $statuscode = '404 Not Found';
-        $statusmassage = 'not found';
-        outputHttpResponse($statuscode, $statusmassage, $headers, $body);
+        outputHttpResponse('404 Not Found', 'not found', $headers, $body);
         return;
     }
-
-
     $numberString  = substr($uri, strlen("/sum?nums="));
     $numbers = explode(",", $numberString);
     if(count($numbers) == 0){
-        $statuscode = '400 Bad Request';
-        $statusmassage = 'not found';
-        outputHttpResponse($statuscode, $statusmassage, $headers, $body);
+        outputHttpResponse('400 Bad Request', 'not found', $headers, $body);
         return;
     }
-    $sum = 0;
-    foreach($numbers as $number){
-        $sum += intval($number);
-    }
-
-    $statusmassage = $sum;
-    outputHttpResponse($statuscode, $statusmassage, $headers, $body);
+    $sum = array_sum($numbers);
+    $statusMassage = $sum;
+    outputHttpResponse('200 OK', $statusMassage, $headers, $body);
 
 }
 
 function parseTcpStringAsHttpRequest($string) {
-    $parsingContext = explode("\n", $string);
-    $method = '';
-    $uri = '';
+    $parsingContext = explode(PHP_EOL, $string);
     $headers = [];
     $body = '';
 
-    for($i = 0; $i < count($parsingContext); $i++) {
-        if($i == 0 ) {
-            $firstRow = explode(" ", $parsingContext[$i]);
-            $method = trim($firstRow[0]);
-            $uri = trim($firstRow[1]);
-            continue;
-        }
-        if(strpos($parsingContext[$i], ":")){
+    $firstRow = explode(" ", $parsingContext[0]);
+    $method = trim($firstRow[0]);
+    $uri = trim($firstRow[1]);
+
+    $exp = "/[:]/";
+    $i = 1;
+    for(; $i < count($parsingContext); $i++) {
+        if(preg_match($exp, $parsingContext[$i])){
             $newRow = explode(":", $parsingContext[$i]);
             $headerTitle = trim($newRow[0]);
             $headerBody = trim($newRow[1]);
             $headers[] = [$headerTitle, $headerBody];
             continue;
         }
-
+        break;
+    }
+    for(; $i < count($parsingContext); $i++) {
         if(str_starts_with($parsingContext[$i], 'bookId')){
             $body = $parsingContext[$i];
         }
