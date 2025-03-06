@@ -45,8 +45,7 @@ function processHttpRequest($method, $uri, $headers, $body) {
         return;
     }
     $sum = array_sum($numbers);
-    $statusMassage = $sum;
-    outputHttpResponse('200 OK', $statusMassage, $headers, $body);
+    outputHttpResponse('200 OK', $sum, $headers, $body);
 
 }
 
