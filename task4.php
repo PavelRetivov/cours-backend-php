@@ -1,11 +1,4 @@
 <?php
-
-$STATUS_CODE = [
-    '200' => '200 OK',
-    '400' => '400 Bad Request',
-    '404' => '404 Not Found',
-    '500' => ' 500 Internal Server Error'
-];
 function readHttpLikeInput() {
     $f = fopen( 'php://stdin', 'r' );
     $store = "";
@@ -24,30 +17,23 @@ function readHttpLikeInput() {
 
 $contents = readHttpLikeInput();
 
-function outputHttpResponse($statuscode, $statusmessage, $headers, $body) {
+function outputHttpResponse($statusCode, $statusMessage, $headers, $body) {
 
-    echo "HTTP/1.1 $statuscode\n";
-    echo "Server: Apache/2.2.14 (Win32)\n";
-    echo "Content-Type: text/html; charset=utf-8\n";
-    echo "Connection: Closed\n";
-    echo "Content-Length: " . strlen($statusmessage) . "\n";
-    echo "\n$statusmessage" ;
+    echo "HTTP/1.1 $statusCode" . PHP_EOL;
+    echo "Server: Apache/2.2.14 (Win32)" . PHP_EOL;
+    echo "Connection: Closed" . PHP_EOL;
+    echo "Content-Type: text/html; charset=utf-8" . PHP_EOL;
+    echo "Content-Length: " . strlen($statusMessage)  . PHP_EOL;
+    echo  PHP_EOL . "$statusMessage" ;
 }
 
 function processHttpRequest($method, $uri, $headers, $body) {
-    global $STATUS_CODE;
-    $statuscode = '200 OK';
-
     if($method != "POST"){
-        $statuscode = '400 Bad Request';
-        $statusmassage = 'not found';
-        outputHttpResponse($statuscode, $statusmassage, $headers, $body);
+        outputHttpResponse('400 Bad Request', 'not found', $headers, $body);
         return;
     }
     if(!str_starts_with($uri, "/api/checkLoginAndPassword")){
-        $statuscode = '404 Not Found';
-        $statusmassage = 'not found';
-        outputHttpResponse($statuscode, $statusmassage, $headers, $body);
+        outputHttpResponse('404 Not Found', 'not found', $headers, $body);
         return;
     }
 
@@ -56,59 +42,55 @@ function processHttpRequest($method, $uri, $headers, $body) {
     $password = explode("=",$parsingBody[1])[1];
 
     $dbPasswords = file_get_contents("passwords.txt");
-
     if($dbPasswords === false){
-        $statuscode = $STATUS_CODE['500'];
-        $statusmassage = 'not found';
-        outputHttpResponse($statuscode, $statusmassage, $headers, $body);
+        outputHttpResponse("500 Internal Server Error", 'not found', $headers, $body);
         return;
     }
-
     $parsingDbPasswords = explode("\n", $dbPasswords);
-
     $result = false;
 
-    foreach ($parsingDbPasswords as $dbPassword) {
-        if($dbPassword == $login . ":" . $password){
-            $result = true;
-            break;
+    foreach ($parsingDbPasswords as $dbUserInfo) {
+        if(str_starts_with($dbUserInfo, $login)){
+           $dbUserInfoParser = explode(":", $dbUserInfo);
+           $dbLoginUser = $dbUserInfoParser[0];
+           $dbPasswordUser = $dbUserInfoParser[1];
+           $result = (password_verify($password, $dbPasswordUser));
+           break;
         }
     }
 
 
     if($result) {
-        $statusmassage = '<h1 style="color:green">FOUND</h1>';
+        $statusMassage = '<h1 style="color:green">FOUND</h1>';
     }else{
-        $statusmassage = 'not found';
+        $statusMassage = 'not found';
     }
-    outputHttpResponse($statuscode, $statusmassage, $headers, $body);
+    outputHttpResponse('200 OK', $statusMassage, $headers, $body);
 }
 
 function parseTcpStringAsHttpRequest($string) {
-    $parsingContext = explode("\n", $string);
-    $method = '';
-    $uri = '';
+    $parsingContext = explode(PHP_EOL, $string);
     $headers = [];
     $body = '';
 
-    for($i = 0; $i < count($parsingContext); $i++) {
-        if($i == 0 ) {
-            $firstRow = explode(" ", $parsingContext[$i]);
-            $method = trim($firstRow[0]);
-            $uri = trim($firstRow[1]);
-            continue;
-        }
-        if(strpos($parsingContext[$i], ":")){
+    $firstRow = explode(" ", $parsingContext[0]);
+    $method = trim($firstRow[0]);
+    $uri = trim($firstRow[1]);
+
+    $exp = "/[:]/";
+    $i = 1;
+    for(; $i < count($parsingContext); $i++) {
+        if(preg_match($exp, $parsingContext[$i])){
             $newRow = explode(":", $parsingContext[$i]);
             $headerTitle = trim($newRow[0]);
             $headerBody = trim($newRow[1]);
             $headers[] = [$headerTitle, $headerBody];
             continue;
         }
-
-        if(count($parsingContext) > 0){
-            $body = $parsingContext[$i];
-        }
+        break;
+    }
+    for(; $i < count($parsingContext); $i++) {
+        $body = $parsingContext[$i];
     }
 
     return array(
