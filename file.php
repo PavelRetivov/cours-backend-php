@@ -1,16 +1,13 @@
 <?php
-$NAME_DATABASE = "dataBase.txt";
-$dbInFile = file_get_contents($NAME_DATABASE);
-if($dbInFile === false){
-    $error = "Error: File not found";
-}else{
-    $parserDbInFile = explode(":", $dbInFile);
-    $counter = $parserDbInFile[1];
-    $putCounterInDb = $parserDbInFile[0] . ":" . ($counter + 1);
-    file_put_contents($NAME_DATABASE, $putCounterInDb);
+session_start();
 
+if(isset($_SESSION['counter'])){
+    $_SESSION['counter']++;
+}else{
+    $_SESSION['counter'] = 1;
 }
 ?>
+
 
 <div class="wrapper">
     <div class="header">
@@ -30,7 +27,7 @@ if($dbInFile === false){
         <div class="counter">
             <h1> Page Visit Counter</h1>
             <p> You have visited this page:
-                <span> <strong><?= $counter ?? $error ?></strong></span>
+                <span> <strong><?=$_SESSION['counter'] ?></strong></span>
             </p>
         </div>
     </div>
