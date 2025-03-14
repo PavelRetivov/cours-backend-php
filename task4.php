@@ -2,16 +2,16 @@
 function readHttpLikeInput() {
     $f = fopen( 'php://stdin', 'r' );
     $store = "";
-    $toread = 0;
+    $toRead = 0;
     while( $line = fgets( $f ) ) {
         $store .= preg_replace("/\r/", "", $line);
-        if (preg_match('/Content-Length: (\d+)/',$line,$m))
-            $toread=$m[1]*1;
+        if (preg_match('/Content-Length: (\d+)/',$line,$matches))
+            $toRead=$matches[1]*1;
         if ($line == "\r\n")
             break;
     }
-    if ($toread > 0)
-        $store .= fread($f, $toread);
+    if ($toRead > 0)
+        $store .= fread($f, $toRead);
     return $store;
 }
 
@@ -38,8 +38,15 @@ function processHttpRequest($method, $uri, $headers, $body) {
     }
 
     $parsingBody = explode("&", $body);
-    $login = explode("=", $parsingBody[0])[1];
-    $password = explode("=",$parsingBody[1])[1];
+    try {
+        if($parsingBody){
+            $login = explode("=", $parsingBody[0])[1];
+            $password = explode("=",$parsingBody[1])[1];
+        }
+    }catch (Exception){
+        outputHttpResponse('400 Bad Request', 'not found', $headers, $body);
+        return;
+    }
 
     $dbPasswords = file_get_contents("passwords.txt");
     if($dbPasswords === false){
@@ -51,20 +58,14 @@ function processHttpRequest($method, $uri, $headers, $body) {
 
     foreach ($parsingDbPasswords as $dbUserInfo) {
         if(str_starts_with($dbUserInfo, $login)){
-           $dbUserInfoParser = explode(":", $dbUserInfo);
-           $dbLoginUser = $dbUserInfoParser[0];
-           $dbPasswordUser = $dbUserInfoParser[1];
-           $result = (password_verify($password, $dbPasswordUser));
-           break;
+            $dbUserInfoParser = explode(":", $dbUserInfo);
+            $dbPasswordUser = $dbUserInfoParser[1];
+            $result = (password_verify($password, $dbPasswordUser));
+            break;
         }
     }
 
-
-    if($result) {
-        $statusMassage = '<h1 style="color:green">FOUND</h1>';
-    }else{
-        $statusMassage = 'not found';
-    }
+    $statusMassage = $result ? '<h1 style="color:green">FOUND</h1>' : 'not found';
     outputHttpResponse('200 OK', $statusMassage, $headers, $body);
 }
 
@@ -93,12 +94,12 @@ function parseTcpStringAsHttpRequest($string) {
         $body = $parsingContext[$i];
     }
 
-    return array(
+    return [
         "method" => $method,
         "uri" => $uri,
         "headers" => $headers,
         "body" => $body
-    );
+    ];
 }
 
 $http = parseTcpStringAsHttpRequest($contents);
