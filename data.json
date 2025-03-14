@@ -1,0 +1,14 @@
+[
+    {
+        "login": "login1",
+        "password": "$2y$10$Xa1ALwJbgt9Iz9xLnlSx7efP4H3n2C6aUHRhz7WaA86iCdhkL0AaG"
+    },
+    {
+        "text": "first todo",
+        "status": false
+    },
+    {
+        "login": "login3",
+        "password": "$2y$10$w3SIvRZ3NdDgAK5mW2RSD.e0\/ib44wvfj4Vs0Edrp2Tm35AkjolSi"
+    }
+]
