@@ -18,7 +18,6 @@ function readHttpLikeInput() {
 $contents = readHttpLikeInput();
 
 function outputHttpResponse($statusCode, $statusMessage, $headers, $body) {
-
     echo "HTTP/1.1 $statusCode" . PHP_EOL;
     echo "Server: Apache/2.2.14 (Win32)" . PHP_EOL;
     echo "Connection: Closed" . PHP_EOL;
@@ -28,8 +27,6 @@ function outputHttpResponse($statusCode, $statusMessage, $headers, $body) {
 }
 
 function processHttpRequest($method, $uri, $headers, $body) {
-
-
     if($method != "GET"){
         outputHttpResponse('400 Bad Request', 'not found', $headers, $body);
         return;
@@ -44,8 +41,7 @@ function processHttpRequest($method, $uri, $headers, $body) {
         outputHttpResponse('400 Bad Request', 'not found', $headers, $body);
         return;
     }
-    $sum = array_sum($numbers);
-    outputHttpResponse('200 OK', $sum, $headers, $body);
+    outputHttpResponse('200 OK', array_sum($numbers), $headers, $body);
 
 }
 
@@ -76,12 +72,12 @@ function parseTcpStringAsHttpRequest($string) {
         }
     }
 
-    return array(
+    return [
         "method" => $method,
         "uri" => $uri,
         "headers" => $headers,
         "body" => $body
-    );
+    ];
 }
 
 $http = parseTcpStringAsHttpRequest($contents);
