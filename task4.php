@@ -1,0 +1,106 @@
+<?php
+function readHttpLikeInput() {
+    $f = fopen( 'php://stdin', 'r' );
+    $store = "";
+    $toRead = 0;
+    while( $line = fgets( $f ) ) {
+        $store .= preg_replace("/\r/", "", $line);
+        if (preg_match('/Content-Length: (\d+)/',$line,$matches))
+            $toRead=$matches[1]*1;
+        if ($line == "\r\n")
+            break;
+    }
+    if ($toRead > 0)
+        $store .= fread($f, $toRead);
+    return $store;
+}
+
+$contents = readHttpLikeInput();
+
+function outputHttpResponse($statusCode, $statusMessage, $headers, $body) {
+
+    echo "HTTP/1.1 $statusCode" . PHP_EOL;
+    echo "Server: Apache/2.2.14 (Win32)" . PHP_EOL;
+    echo "Connection: Closed" . PHP_EOL;
+    echo "Content-Type: text/html; charset=utf-8" . PHP_EOL;
+    echo "Content-Length: " . strlen($statusMessage)  . PHP_EOL;
+    echo  PHP_EOL . "$statusMessage" ;
+}
+
+function processHttpRequest($method, $uri, $headers, $body) {
+    if($method != "POST"){
+        outputHttpResponse('400 Bad Request', 'not found', $headers, $body);
+        return;
+    }
+    if(!str_starts_with($uri, "/api/checkLoginAndPassword")){
+        outputHttpResponse('404 Not Found', 'not found', $headers, $body);
+        return;
+    }
+
+    $parsingBody = explode("&", $body);
+    try {
+        if($parsingBody){
+            $login = explode("=", $parsingBody[0])[1];
+            $password = explode("=",$parsingBody[1])[1];
+        }
+    }catch (Exception){
+        outputHttpResponse('400 Bad Request', 'not found', $headers, $body);
+        return;
+    }
+
+    $dbPasswords = file_get_contents("passwords.txt");
+    if($dbPasswords === false){
+        outputHttpResponse("500 Internal Server Error", 'not found', $headers, $body);
+        return;
+    }
+    $parsingDbPasswords = explode("\n", $dbPasswords);
+    $result = false;
+
+    foreach ($parsingDbPasswords as $dbUserInfo) {
+        if(str_starts_with($dbUserInfo, $login)){
+            $dbUserInfoParser = explode(":", $dbUserInfo);
+            $dbPasswordUser = $dbUserInfoParser[1];
+            $result = (password_verify($password, $dbPasswordUser));
+            break;
+        }
+    }
+
+    $statusMassage = $result ? '<h1 style="color:green">FOUND</h1>' : 'not found';
+    outputHttpResponse('200 OK', $statusMassage, $headers, $body);
+}
+
+function parseTcpStringAsHttpRequest($string) {
+    $parsingContext = explode(PHP_EOL, $string);
+    $headers = [];
+    $body = '';
+
+    $firstRow = explode(" ", $parsingContext[0]);
+    $method = trim($firstRow[0]);
+    $uri = trim($firstRow[1]);
+
+    $exp = "/[:]/";
+    $i = 1;
+    for(; $i < count($parsingContext); $i++) {
+        if(preg_match($exp, $parsingContext[$i])){
+            $newRow = explode(":", $parsingContext[$i]);
+            $headerTitle = trim($newRow[0]);
+            $headerBody = trim($newRow[1]);
+            $headers[] = [$headerTitle, $headerBody];
+            continue;
+        }
+        break;
+    }
+    for(; $i < count($parsingContext); $i++) {
+        $body = $parsingContext[$i];
+    }
+
+    return [
+        "method" => $method,
+        "uri" => $uri,
+        "headers" => $headers,
+        "body" => $body
+    ];
+}
+
+$http = parseTcpStringAsHttpRequest($contents);
+processHttpRequest($http["method"], $http["uri"], $http["headers"], $http["body"]);
