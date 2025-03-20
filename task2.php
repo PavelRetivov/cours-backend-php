@@ -1,9 +1,9 @@
 <?php
 function readHttpLikeInput() {
-    $f = fopen( 'php://stdin', 'r' );
+    $fileHttpRequest = fopen( 'php://stdin', 'r' );
     $store = "";
     $toRead = 0;
-    while( $line = fgets( $f ) ) {
+    while( $line = fgets( $fileHttpRequest ) ) {
         $store .= preg_replace("/\r/", "", $line);
         if (preg_match('/Content-Length: (\d+)/',$line,$matches))
             $toRead=$matches[1]*1;
@@ -11,36 +11,32 @@ function readHttpLikeInput() {
             break;
     }
     if ($toRead > 0)
-        $store .= fread($f, $toRead);
+        $store .= fread($fileHttpRequest, $toRead);
     return $store;
 }
 
 $contents = readHttpLikeInput();
 
-function parseTcpStringAsHttpRequest($string) {
-    $parsingContext = explode(PHP_EOL, $string);
+function parseTcpStringAsHttpRequest($contents) {
+    $parsingContents = explode(PHP_EOL, $contents);
     $headers = [];
     $body = '';
 
-    $firstRow = explode(" ", $parsingContext[0]);
+    $firstRow = explode(" ", $parsingContents[0]);
     $method = trim($firstRow[0]);
     $uri = trim($firstRow[1]);
 
-    $exp = "/[:]/";
-    $i = 1;
-    for(; $i < count($parsingContext); $i++) {
-        if(preg_match($exp, $parsingContext[$i])){
-            $newRow = explode(":", $parsingContext[$i]);
+    for($i=1; $i < count($parsingContents); $i++) {
+        if(str_contains( $parsingContents[$i], ':')){
+            $newRow = explode(":", $parsingContents[$i]);
             $headerTitle = trim($newRow[0]);
             $headerBody = trim($newRow[1]);
             $headers[] = [$headerTitle, $headerBody];
             continue;
         }
-        break;
-    }
-    for(; $i < count($parsingContext); $i++) {
-        if(str_starts_with($parsingContext[$i], 'bookId')){
-            $body = $parsingContext[$i];
+        if(str_contains( $parsingContents[$i], '=')){
+            echo $parsingContents[$i];
+            $body = $parsingContents[$i];
         }
     }
 
