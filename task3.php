@@ -58,10 +58,10 @@ function parseTcpStringAsHttpRequest($string) {
     $i = 1;
     for(; $i < count($parsingContext); $i++) {
         if(preg_match($exp, $parsingContext[$i])){
-            $newRow = explode(":", $parsingContext[$i]);
-            $headerTitle = trim($newRow[0]);
-            $headerBody = trim($newRow[1]);
-            $headers[] = [$headerTitle, $headerBody];
+            $HeaderTitleAndBody= explode(":", $parsingContext[$i]);
+            $headerKey = trim($HeaderTitleAndBody[0]);
+            $headerValue = trim($HeaderTitleAndBody[1]);
+            $headers[$headerKey] = $headerValue;
             continue;
         }
         break;
