@@ -27,71 +27,78 @@ function outputHttpResponse($statusCode, $statusMessage, $headers, $body) {
     echo  PHP_EOL . "$statusMessage" ;
 }
 
+function getResultAroundEqual($param)
+{
+    return explode("=", $param)[1];
+}
+
 function processHttpRequest($method, $uri, $headers, $body) {
     if($method != "POST"){
-        outputHttpResponse('400 Bad Request', 'not found', $headers, $body);
+        outputHttpResponse('400 Bad Request', 'method dont right', $headers, $body);
         return;
     }
     if(!str_starts_with($uri, "/api/checkLoginAndPassword")){
-        outputHttpResponse('404 Not Found', 'not found', $headers, $body);
+        outputHttpResponse('404 Not Found', 'url dont right', $headers, $body);
         return;
     }
-
-    $parsingBody = explode("&", $body);
+    [$loginParam, $passwordParam] = explode("&", $body);
     try {
-        if($parsingBody){
-            $login = explode("=", $parsingBody[0])[1];
-            $password = explode("=",$parsingBody[1])[1];
+        if($loginParam && $passwordParam){
+            $login = getResultAroundEqual($loginParam);
+            $password = getResultAroundEqual($passwordParam);
+        }else{
+            outputHttpResponse('400 Bad Request', 'data no correct', $headers, $body);
+            return;
         }
     }catch (Exception){
         outputHttpResponse('400 Bad Request', 'not found', $headers, $body);
         return;
     }
 
-    $dbPasswords = file_get_contents("passwords.txt");
-    if($dbPasswords === false){
-        outputHttpResponse("500 Internal Server Error", 'not found', $headers, $body);
+    $dbUsers = file_get_contents("users.txt");
+    if($dbUsers === false){
+        outputHttpResponse("500 Internal Server Error", 'dont find database', $headers, $body);
         return;
     }
-    $parsingDbPasswords = explode("\n", $dbPasswords);
+    $parsingDbUsers = explode(PHP_EOL, $dbUsers);
     $result = false;
-
-    foreach ($parsingDbPasswords as $dbUserInfo) {
-        if(str_starts_with($dbUserInfo, $login)){
-            $dbUserInfoParser = explode(":", $dbUserInfo);
-            $dbPasswordUser = $dbUserInfoParser[1];
-            $result = (password_verify($password, $dbPasswordUser));
-            break;
+    if($login && $password){
+        foreach ($parsingDbUsers as $dbUserInfo) {
+            [$dbLoginUser, $dbPasswordUser] = explode(":", $dbUserInfo, 2);
+            if($dbLoginUser === $login){
+                $result = (password_verify($password, $dbPasswordUser));
+                break;
+            }
         }
+    }else{
+        outputHttpResponse('400 Bad Request', 'data no correct', $headers, $body);
+        return;
     }
 
-    $statusMassage = $result ? '<h1 style="color:green">FOUND</h1>' : 'not found';
+    $statusMassage = $result ? '<h1 style="color:green">FOUND</h1>' : 'password or login dont correct';
     outputHttpResponse('200 OK', $statusMassage, $headers, $body);
 }
 
-function parseTcpStringAsHttpRequest($string) {
-    $parsingContext = explode(PHP_EOL, $string);
+function parseTcpStringAsHttpRequest($contents) {
+    $parsingContents = explode(PHP_EOL, $contents);
     $headers = [];
     $body = '';
 
-    $firstRow = explode(" ", $parsingContext[0]);
+    $firstRow = explode(" ", $parsingContents[0]);
     $method = trim($firstRow[0]);
     $uri = trim($firstRow[1]);
 
-    $exp = "/[:]/";
-    $i = 1;
-    for(; $i < count($parsingContext); $i++) {
-        if(preg_match($exp, $parsingContext[$i])){
-            $newRow = explode(":", $parsingContext[$i]);
+    for($i=1; $i < count($parsingContents); $i++) {
+        if(str_contains( $parsingContents[$i], ':')){
+            $newRow = explode(":", $parsingContents[$i]);
             $headerTitle = trim($newRow[0]);
             $headerBody = trim($newRow[1]);
             $headers[] = [$headerTitle, $headerBody];
             continue;
         }
-        break;
-    }
-    for(; $i < count($parsingContext); $i++) {
-        $body = $parsingContext[$i];
+        if(str_contains( $parsingContents[$i], '=')){
+            $body = $parsingContents[$i];
+        }
     }
 
     return [
@@ -101,6 +108,7 @@ function parseTcpStringAsHttpRequest($string) {
         "body" => $body
     ];
 }
+
 
 $http = parseTcpStringAsHttpRequest($contents);
 processHttpRequest($http["method"], $http["uri"], $http["headers"], $http["body"]);
