@@ -45,30 +45,25 @@ function processHttpRequest($method, $uri, $headers, $body) {
 
 }
 
-function parseTcpStringAsHttpRequest($string) {
-    $parsingContext = explode(PHP_EOL, $string);
+function parseTcpStringAsHttpRequest($contents) {
+    $parsingContents = explode(PHP_EOL, $contents);
     $headers = [];
     $body = '';
 
-    $firstRow = explode(" ", $parsingContext[0]);
+    $firstRow = explode(" ", $parsingContents[0]);
     $method = trim($firstRow[0]);
     $uri = trim($firstRow[1]);
 
-    $exp = "/[:]/";
-    $i = 1;
-    for(; $i < count($parsingContext); $i++) {
-        if(preg_match($exp, $parsingContext[$i])){
-            $HeaderTitleAndBody= explode(":", $parsingContext[$i]);
-            $headerKey = trim($HeaderTitleAndBody[0]);
-            $headerValue = trim($HeaderTitleAndBody[1]);
-            $headers[$headerKey] = $headerValue;
+    for($i=1; $i < count($parsingContents); $i++) {
+        if(str_contains( $parsingContents[$i], ':')){
+            $newRow = explode(":", $parsingContents[$i]);
+            $headerTitle = trim($newRow[0]);
+            $headerBody = trim($newRow[1]);
+            $headers[] = [$headerTitle, $headerBody];
             continue;
         }
-        break;
-    }
-    for(; $i < count($parsingContext); $i++) {
-        if(str_starts_with($parsingContext[$i], 'bookId')){
-            $body = $parsingContext[$i];
+        if(str_contains( $parsingContents[$i], '=')){
+            $body = $parsingContents[$i];
         }
     }
 
@@ -79,6 +74,7 @@ function parseTcpStringAsHttpRequest($string) {
         "body" => $body
     ];
 }
+
 
 $http = parseTcpStringAsHttpRequest($contents);
 processHttpRequest($http["method"], $http["uri"], $http["headers"], $http["body"]);
