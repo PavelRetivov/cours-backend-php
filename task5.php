@@ -1,15 +1,15 @@
 <?php
 
 function isUriValid($uri){
-    $regex = "/^\/?[a-zA-Z.]+(\/[a-zA-Z.]+)+\/?$";
+    $regex = "/^\/?[a-zA-Z.]+(\/[a-zA-Z.]+)+\/?$/";
     return (bool)preg_match($regex, $uri);
 }
 
 if($_SERVER['REQUEST_METHOD'] == "GET"){
     $requestString = file_get_contents("php://input");
     $request = json_decode($requestString, true);
-
     $uri = isUriValid($request['uri']) ? $request['uri'] : null;
+
     if($uri){
         [$folder, $file ] = explode("/", trim($uri, "/"), 2);
         if(in_array($folder, ["another.shpp.me", "student"])){
