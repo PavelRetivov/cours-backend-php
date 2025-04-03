@@ -1,20 +1,41 @@
 <?php
-function processHttpRequest($method, $uri){
-    if($method != "GET"){
-        echo ["status" => "400 Bad Request", "message" => "method dont right"];
-    }
-    [$folder, $file ] = explode("/", trim($uri, "/"), 2);
-    echo $folder;
-    if($folder === "another.shpp.me" || $folder === "student"){
-        if($folder === "another.shpp.me"){
-            echo file_get_contents("another/" . $file);
-        }
-        if($folder === "student"){
-            echo file_get_contents("student/" . $file);
+
+function isUriValid($uri){
+    $regex = "/^\/?[a-zA-Z.]+(\/[a-zA-Z.]+)+\/?$";
+    return (bool)preg_match($regex, $uri);
+}
+
+if($_SERVER['REQUEST_METHOD'] == "GET"){
+    $requestString = file_get_contents("php://input");
+    $request = json_decode($requestString, true);
+
+    $uri = isUriValid($request['uri']) ? $request['uri'] : null;
+    if($uri){
+        [$folder, $file ] = explode("/", trim($uri, "/"), 2);
+        if(in_array($folder, ["another.shpp.me", "student"])){
+            if($folder === "another.shpp.me"){
+                try {
+                    echo file_get_contents("another/" . $file);
+                }catch (Exception $e){
+                    echo json_encode(["status" => "404 Not Found", "message" => "file not found"]);
+                    return;
+                }
+            }
+            if($folder === "student"){
+                try {
+                    echo file_get_contents("student/" . $file);
+                }catch (Exception $e){
+                    echo json_encode(["status" => "404 Not Found", "message" => "file not found"]);
+                    return;
+                }
+            }
+        }else{
+            echo json_encode(["status" => "400 Bad Request", "message" => "uri don`t right"]);
         }
     }else{
-        echo ["status" => "400 Bad Request", "message" => "url dont right"];
+        echo json_encode(["status" => "400 Bad Request", "message" => "uri don`t right"]);
     }
+}else{
+    echo json_encode(["status" => "400 Bad Request", "message" => "method dont right"]);
 };
 
-processHttpRequest("GET", "another.shpp.me/hello.html");
