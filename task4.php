@@ -66,9 +66,9 @@ function processHttpRequest($method, $uri, $body) {
         outputHttpResponse('400 Bad Request', 'not found');
         return;
     }
-    $dbUsers = fopen("users.txt", 'r');
+    $db_users = fopen("users.txt", 'r');
 
-    if($dbUsers === false){
+    if($db_users === false){
         outputHttpResponse("500 Internal Server Error", 'Internal Server Error');
         return;
     }
@@ -80,8 +80,8 @@ function processHttpRequest($method, $uri, $body) {
         return;
     }
 
-    while (!feof($dbUsers)) {
-        $dbUserInfo = fgets($dbUsers);
+    while (!feof($db_users)) {
+        $dbUserInfo = fgets($db_users);
         [$dbLoginUser, $dbPasswordUser] = explode(":", $dbUserInfo, 2);
 
         if($dbLoginUser === $login){
