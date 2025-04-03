@@ -3,22 +3,30 @@ function readHttpLikeInput() {
     $f = fopen( 'php://stdin', 'r' );
     $store = "";
     $toRead = 0;
-    while( $line = fgets( $f ) ) {
+
+    while(!feof($f)) {
+        $line = fgets($f);
         $store .= preg_replace("/\r/", "", $line);
-        if (preg_match('/Content-Length: (\d+)/',$line,$matches))
+
+        if (preg_match('/Content-Length: (\d+)/',$line,$matches)){
             $toRead=$matches[1]*1;
-        if ($line == "\r\n")
+        }
+
+        if ($line == "\r\n"){
             break;
+        }
     }
-    if ($toRead > 0)
+
+    if ($toRead > 0){
         $store .= fread($f, $toRead);
+    }
+
     return $store;
 }
 
 $contents = readHttpLikeInput();
 
-function outputHttpResponse($statusCode, $statusMessage, $headers, $body) {
-
+function outputHttpResponse($statusCode, $statusMessage) {
     echo "HTTP/1.1 $statusCode" . PHP_EOL;
     echo "Server: Apache/2.2.14 (Win32)" . PHP_EOL;
     echo "Connection: Closed" . PHP_EOL;
@@ -27,62 +35,69 @@ function outputHttpResponse($statusCode, $statusMessage, $headers, $body) {
     echo  PHP_EOL . "$statusMessage" ;
 }
 
-function parsKeyValue($param)
+function parseKeyValue($param)
 {
     return explode("=", $param)[1];
 }
 
-function processHttpRequest($method, $uri, $headers, $body) {
+function processHttpRequest($method, $uri, $body) {
+
     if($method != "POST"){
-        outputHttpResponse('400 Bad Request', 'the method is incorrect', $headers, $body);
-        return;
-    }
-    if(!str_starts_with($uri, "/api/checkLoginAndPassword")){
-        outputHttpResponse('404 Not Found', 'url don`t right', $headers, $body);
-        return;
-    }
-    try {
-        [$loginParam, $passwordParam] = explode("&", $body);
-        if($loginParam && $passwordParam){
-            $login = parsKeyValue($loginParam);
-            $password = parsKeyValue($passwordParam);
-        }else{
-            outputHttpResponse('400 Bad Request', 'data no correct', $headers, $body);
-            return;
-        }
-    }catch (Exception){
-        outputHttpResponse('400 Bad Request', 'not found', $headers, $body);
+        outputHttpResponse('400 Bad Request', 'the method is incorrect');
         return;
     }
 
-    $dbUsers = fopen("users.txt", 'r');
-    if($dbUsers === false){
-        outputHttpResponse("500 Internal Server Error", 'don`t find database', $headers, $body);
+    if(!str_starts_with($uri, "/api/checkLoginAndPassword")){
+        outputHttpResponse('404 Not Found', 'url does not exist');
         return;
     }
-    $result = false;
-    if($login && $password){
-        while ($dbUserInfo = fgets($dbUsers)) {
-            [$dbLoginUser, $dbPasswordUser] = explode(":", $dbUserInfo, 2);
-            if($dbLoginUser === $login){
-                $result = (password_verify($password, $dbPasswordUser));
-                break;
-            }
+
+    try {
+        [$loginParam, $passwordParam] = explode("&", $body);
+
+        if(!$loginParam || !$passwordParam){
+            outputHttpResponse('400 Bad Request', 'data no correct');
+            return;
         }
-    }else{
-        outputHttpResponse('400 Bad Request', 'data no correct', $headers, $body);
+
+        $login = parseKeyValue($loginParam);
+        $password = parseKeyValue($passwordParam);
+    }catch (Exception){
+        outputHttpResponse('400 Bad Request', 'not found');
         return;
+    }
+    $dbUsers = fopen("users.txt", 'r');
+
+    if($dbUsers === false){
+        outputHttpResponse("500 Internal Server Error", 'Internal Server Error');
+        return;
+    }
+
+    $result = false;
+
+    if(!$login || !$password){
+        outputHttpResponse('400 Bad Request', 'data no correct');
+        return;
+    }
+
+    while (!feof($dbUsers)) {
+        $dbUserInfo = fgets($dbUsers);
+        [$dbLoginUser, $dbPasswordUser] = explode(":", $dbUserInfo, 2);
+
+        if($dbLoginUser === $login){
+            $result = (password_verify($password, $dbPasswordUser));
+            break;
+        }
     }
 
     $statusMassage = $result ? '<h1 style="color:green">FOUND</h1>' : 'password or login dont correct';
-    outputHttpResponse('200 OK', $statusMassage, $headers, $body);
+    outputHttpResponse('200 OK', $statusMassage);
 }
 
 function parseTcpStringAsHttpRequest($contents) {
     $parsingContents = explode(PHP_EOL, $contents);
     $headers = [];
     $body = '';
-
     $firstRow = explode(" ", $parsingContents[0]);
     $method = trim($firstRow[0]);
     $uri = trim($firstRow[1]);
@@ -95,6 +110,7 @@ function parseTcpStringAsHttpRequest($contents) {
             $headers[] = [$headerTitle, $headerBody];
             continue;
         }
+
         if(str_contains( $parsingContents[$i], '=')){
             $body = $parsingContents[$i];
         }
@@ -108,6 +124,5 @@ function parseTcpStringAsHttpRequest($contents) {
     ];
 }
 
-
 $http = parseTcpStringAsHttpRequest($contents);
-processHttpRequest($http["method"], $http["uri"], $http["headers"], $http["body"]);
+processHttpRequest($http["method"], $http["uri"], $http["body"]);
