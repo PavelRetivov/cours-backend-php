@@ -3,15 +3,23 @@ function readHttpLikeInput() {
     $fileHttpRequest = fopen( 'php://stdin', 'r' );
     $store = "";
     $toRead = 0;
+
     while( $line = fgets( $fileHttpRequest ) ) {
         $store .= preg_replace("/\r/", "", $line);
-        if (preg_match('/Content-Length: (\d+)/',$line,$matches))
+
+        if (preg_match('/Content-Length: (\d+)/',$line,$matches)){
             $toRead=$matches[1]*1;
-        if ($line == "\r\n")
+        }
+
+        if ($line == "\r\n"){
             break;
+        }
     }
-    if ($toRead > 0)
+
+    if ($toRead > 0){
         $store .= fread($fileHttpRequest, $toRead);
+    }
+
     return $store;
 }
 
@@ -21,7 +29,6 @@ function parseTcpStringAsHttpRequest($contents) {
     $parsingContents = explode(PHP_EOL, $contents);
     $headers = [];
     $body = '';
-
     $firstRow = explode(" ", $parsingContents[0]);
     $method = trim($firstRow[0]);
     $uri = trim($firstRow[1]);
@@ -34,6 +41,7 @@ function parseTcpStringAsHttpRequest($contents) {
             $headers[] = [$headerTitle, $headerBody];
             continue;
         }
+
         if(str_contains( $parsingContents[$i], '=')){
             echo $parsingContents[$i];
             $body = $parsingContents[$i];
