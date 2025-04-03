@@ -27,25 +27,25 @@ function outputHttpResponse($statusCode, $statusMessage, $headers, $body) {
     echo  PHP_EOL . "$statusMessage" ;
 }
 
-function getResultAroundEqual($param)
+function parsKeyValue($param)
 {
     return explode("=", $param)[1];
 }
 
 function processHttpRequest($method, $uri, $headers, $body) {
     if($method != "POST"){
-        outputHttpResponse('400 Bad Request', 'method dont right', $headers, $body);
+        outputHttpResponse('400 Bad Request', 'the method is incorrect', $headers, $body);
         return;
     }
     if(!str_starts_with($uri, "/api/checkLoginAndPassword")){
-        outputHttpResponse('404 Not Found', 'url dont right', $headers, $body);
+        outputHttpResponse('404 Not Found', 'url don`t right', $headers, $body);
         return;
     }
-    [$loginParam, $passwordParam] = explode("&", $body);
     try {
+        [$loginParam, $passwordParam] = explode("&", $body);
         if($loginParam && $passwordParam){
-            $login = getResultAroundEqual($loginParam);
-            $password = getResultAroundEqual($passwordParam);
+            $login = parsKeyValue($loginParam);
+            $password = parsKeyValue($passwordParam);
         }else{
             outputHttpResponse('400 Bad Request', 'data no correct', $headers, $body);
             return;
@@ -55,15 +55,14 @@ function processHttpRequest($method, $uri, $headers, $body) {
         return;
     }
 
-    $dbUsers = file_get_contents("users.txt");
+    $dbUsers = fopen("users.txt", 'r');
     if($dbUsers === false){
-        outputHttpResponse("500 Internal Server Error", 'dont find database', $headers, $body);
+        outputHttpResponse("500 Internal Server Error", 'don`t find database', $headers, $body);
         return;
     }
-    $parsingDbUsers = explode(PHP_EOL, $dbUsers);
     $result = false;
     if($login && $password){
-        foreach ($parsingDbUsers as $dbUserInfo) {
+        while ($dbUserInfo = fgets($dbUsers)) {
             [$dbLoginUser, $dbPasswordUser] = explode(":", $dbUserInfo, 2);
             if($dbLoginUser === $login){
                 $result = (password_verify($password, $dbPasswordUser));
