@@ -12,6 +12,7 @@ function readHttpLikeInput() {
         }
 
         if ($line == "\r\n"){
+
             break;
         }
     }
@@ -38,7 +39,8 @@ function parseTcpStringAsHttpRequest($contents) {
             $newRow = explode(":", $parsingContents[$i]);
             $headerTitle = trim($newRow[0]);
             $headerBody = trim($newRow[1]);
-            $headers[] = [$headerTitle, $headerBody];
+            $headers[$headerTitle] = [$headerBody];
+
             continue;
         }
 
@@ -58,4 +60,3 @@ function parseTcpStringAsHttpRequest($contents) {
 
 $http = parseTcpStringAsHttpRequest($contents);
 echo(json_encode($http, JSON_PRETTY_PRINT));
-?>
