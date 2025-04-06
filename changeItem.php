@@ -22,7 +22,6 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
     $id = $changeTodoTask['id'];
     $text = $changeTodoTask['text'];
     $checked = $changeTodoTask['checked'];
-
     $index = array_search($id, array_column($todoTasks['items'], 'id'));
 
     if($index === false) {
