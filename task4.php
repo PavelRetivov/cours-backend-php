@@ -13,6 +13,7 @@ function readHttpLikeInput() {
         }
 
         if ($line == "\r\n"){
+
             break;
         }
     }
@@ -41,14 +42,15 @@ function parseKeyValue($param)
 }
 
 function processHttpRequest($method, $uri, $body) {
-
     if($method != "POST"){
         outputHttpResponse('400 Bad Request', 'the method is incorrect');
+
         return;
     }
 
     if(!str_starts_with($uri, "/api/checkLoginAndPassword")){
         outputHttpResponse('404 Not Found', 'url does not exist');
+
         return;
     }
 
@@ -57,6 +59,7 @@ function processHttpRequest($method, $uri, $body) {
 
         if(!$loginParam || !$passwordParam){
             outputHttpResponse('400 Bad Request', 'data no correct');
+
             return;
         }
 
@@ -64,12 +67,14 @@ function processHttpRequest($method, $uri, $body) {
         $password = parseKeyValue($passwordParam);
     }catch (Exception){
         outputHttpResponse('400 Bad Request', 'not found');
+
         return;
     }
     $db_users = fopen("users.txt", 'r');
 
     if($db_users === false){
         outputHttpResponse("500 Internal Server Error", 'Internal Server Error');
+
         return;
     }
 
@@ -77,6 +82,7 @@ function processHttpRequest($method, $uri, $body) {
 
     if(!$login || !$password){
         outputHttpResponse('400 Bad Request', 'data no correct');
+
         return;
     }
 
@@ -86,6 +92,7 @@ function processHttpRequest($method, $uri, $body) {
 
         if($dbLoginUser === $login){
             $result = (password_verify($password, $dbPasswordUser));
+
             break;
         }
     }
@@ -108,6 +115,7 @@ function parseTcpStringAsHttpRequest($contents) {
             $headerTitle = trim($newRow[0]);
             $headerBody = trim($newRow[1]);
             $headers[] = [$headerTitle, $headerBody];
+
             continue;
         }
 
