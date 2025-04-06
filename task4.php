@@ -79,13 +79,6 @@ function processHttpRequest($method, $uri, $body) {
     }
 
     $result = false;
-
-    if(!$login || !$password){
-        outputHttpResponse('400 Bad Request', 'data no correct');
-
-        return;
-    }
-
     while (!feof($db_users)) {
         $dbUserInfo = fgets($db_users);
         [$dbLoginUser, $dbPasswordUser] = explode(":", $dbUserInfo, 2);
