@@ -1,14 +1,15 @@
 <?php
-session_start();
+$NAME_DATABASE = "pageVisitCount.txt";
+$pageVisitCount = file_get_contents($NAME_DATABASE);
 
-if(isset($_SESSION['counter'])){
-    $_SESSION['counter']++;
+if(!$pageVisitCount){
+    $error = "Error: File not found";
 }else{
-    $_SESSION['counter'] = 1;
+    [$name, $counter] = explode(":", $pageVisitCount);
+    $putCounterInDb = $name . ":" . ++$counter;
+    file_put_contents($NAME_DATABASE, $putCounterInDb);
 }
 ?>
-
-
 <div class="wrapper">
     <div class="header">
         <div class="logo position-center">
@@ -27,7 +28,7 @@ if(isset($_SESSION['counter'])){
         <div class="counter">
             <h1> Page Visit Counter</h1>
             <p> You have visited this page:
-                <span> <strong><?=$_SESSION['counter'] ?></strong></span>
+                <span> <strong><?=$counter ?? $error ?></strong></span>
             </p>
         </div>
     </div>
