@@ -2,20 +2,32 @@
 
 if($_SERVER['REQUEST_METHOD'] == 'GET') {
 
-    $json = file_get_contents('php://input');
-    $data = json_decode($json, true);
-    $todoData = file_get_contents('todo.json');
-    $todoDataDecode = json_decode($todoData, true);
+    $requestTaskId = file_get_contents('php://input');
+    $taskId = json_decode($requestTaskId, true);
+    $todoTasksFileContent = file_get_contents('todo.json');
+    $todoTasks = json_decode($todoTasksFileContent, true);
 
-    $deleteId = $data['id'];
+    if (!isset($taskId['id']) || !is_numeric($taskId['id'])) {
+        echo '400 Bad Request';
 
-    $todoDataDecode['items'] = array_filter($todoDataDecode['items'], function($item) use ($deleteId) {
-        return $item['id'] != $deleteId;
-    });
+        return;
+    }
 
-    $todoDataDecode['items'] = array_values($todoDataDecode['items']);
+    $deleteId = (int)$taskId['id'];
+    $countStartTodoTasks = count($todoTasks['items']);
+    $todoTasks['items'] = array_filter($todoTasks['items'], fn($item) => $item['id'] !== $deleteId);
+    $todoTasks['items'] = array_values($todoTasks['items']);
+    $result = file_put_contents('todo.json', json_encode($todoTasks));
 
-    file_put_contents('todo.json', json_encode($todoDataDecode));
+    if(!$result){
+        echo '500 Internal Server Error';
 
-    echo json_encode($todoDataDecode);
+        return;
+    }
+
+    echo $countStartTodoTasks === count($todoTasks['items']) ? json_encode(["not ok" => false]) : json_encode(["ok" => true]);
+
+    return;
 }
+
+echo '400 Bad Request';

@@ -1,23 +1,43 @@
 <?php
 
 if($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $json = file_get_contents('php://input');
-    $jsonDecode = json_decode($json, true);
-    $mainTodo = file_get_contents('todo.json');
-    $mainTodoDecode = json_decode($mainTodo, true);
+    $requestChangeTodoTask = file_get_contents('php://input');
+    $changeTodoTask = json_decode($requestChangeTodoTask, true);
+    $todoTasksFileContent = file_get_contents('todo.json');
+    $todoTasks = json_decode($todoTasksFileContent, true);
 
+    if(!isset($changeTodoTask['id']) || !isset($changeTodoTask['text'])
+        || !isset($changeTodoTask['checked'])) {
+        echo '400 Bad Request';
 
-    $id = $jsonDecode['id'];
-    $text = $jsonDecode['text'];
-    $checked = $jsonDecode['checked'];
+        return;
+    }
 
-   foreach ($mainTodoDecode['items'] as &$item) {
-       if($item['id'] == $id){
-              $item['text'] = $text;
-              $item['checked'] = $checked;
-              file_put_contents('todo.json', json_encode($mainTodoDecode, JSON_PRETTY_PRINT));
-              echo json_encode(['status' => '200 OK', 'message' => true]);
-              break;
-       }
-   }
+    if(!filter_var($changeTodoTask['checked'], FILTER_VALIDATE_BOOLEAN)){
+        echo '400 Bad Request - checked must be a boolean';
+
+        return;
+    }
+
+    $id = $changeTodoTask['id'];
+    $text = $changeTodoTask['text'];
+    $checked = $changeTodoTask['checked'];
+
+    $index = array_search($id, array_column($todoTasks['items'], 'id'));
+
+    if($index === false) {
+        echo '404 Not Found';
+
+        return;
+    }
+
+    $todoTasks['items'][$index]['text'] = $text;
+    $todoTasks['items'][$index]['checked'] = $checked;
+    file_put_contents('todo.json', json_encode($todoTasks, JSON_PRETTY_PRINT));
+
+    echo json_encode(["ok"=>true]);
+
+    return;
 }
+
+echo '400 Bad Request';

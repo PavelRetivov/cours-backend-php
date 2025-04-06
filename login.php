@@ -1,34 +1,45 @@
 <?php
+session_start();
 
 if($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $requestAuthorizationData= file_get_contents('php://input');
+    $authorizationData= json_decode($requestAuthorizationData, true);
+    $usersFileContent = file_get_contents('users.json');
+    $users = json_decode($usersFileContent, true);
 
-    $json = file_get_contents('php://input');
-    $data = json_decode($json, true);
-    $mainData = file_get_contents('data.json');
-    $mainDataDecode = json_decode($mainData, true);
+    if(!isset($authorizationData['login']) || !isset($authorizationData['password'])) {
+        echo '400 Bad Request';
 
-    $login = $data['login'];
-    $password = $data['password'];
-
-    if($login && $password) {
-        foreach ($mainDataDecode as $dataUser) {
-            $dataLogin = $dataUser['login'];
-            $dataPassword = $dataUser['password'];
-
-            if($login == $dataLogin){
-                if(password_verify($password, $dataPassword)){
-                    session_start();
-                    $_SESSION['login'] = $login;
-                    echo json_encode(['status' => '200 OK', 'message' => true]);
-                }else{
-                    echo json_encode(['status' => '400 Bad Request', 'message' => false ]);
-                }
-                return;
-            }
-        }
-        echo  json_encode(['status' => '400 Bad Request', 'message' => false]);
         return;
     }
 
-    echo json_encode(['status' => '400 Bad Request', 'message' => false]);
+    $login = $authorizationData['login'];
+    $password = $authorizationData['password'];
+
+    if(!$login || !$password) {
+        echo '400 Bad Request';
+
+        return;
+    }
+
+    foreach ($users as $user) {
+        $dbLogin = $user['login'];
+        $dbPassword = $user['password'];
+
+        if($login === $dbLogin){
+            if(password_verify($password, $dbPassword)){
+                $_SESSION['user'] = $login;
+                echo json_encode(['status' => '200 OK', 'ok' => true]);
+            }else{
+                echo json_encode(['status' => '400 Bad Request', 'message' => 'Incorrect login or password' ]);
+            }
+            return;
+        }
+    }
+
+    echo '400 Bad Request';
+
+    return;
 }
+
+echo '400 Bad Request';
