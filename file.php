@@ -1,14 +1,30 @@
 <?php
-$NAME_DATABASE = "pageVisitCount.txt";
-$pageVisitCount = file_get_contents($NAME_DATABASE);
+function updateCounter($counter)
+{
+    if ($counter === false) {
 
-if(!$pageVisitCount){
-    $error = "Error: File not found";
-}else{
-    [$name, $counter] = explode(":", $pageVisitCount);
-    $putCounterInDb = $name . ":" . ++$counter;
-    file_put_contents($NAME_DATABASE, $putCounterInDb);
+        return "Error: File not found";
+    }
+
+    $counter = (int) $counter;
+
+    if (!is_numeric($counter)) {
+
+        return "Error: File content is not a number";
+    }
+
+    return ++$counter;
 }
+
+$NAME_DATABASE = "pageVisitCount.txt";
+$counter = file_get_contents($NAME_DATABASE);
+$counter = updateCounter($counter);
+
+if(is_numeric($counter)) {
+    file_put_contents($NAME_DATABASE, $counter);
+}
+
+
 ?>
 <div class="wrapper">
     <div class="header">
@@ -28,7 +44,7 @@ if(!$pageVisitCount){
         <div class="counter">
             <h1> Page Visit Counter</h1>
             <p> You have visited this page:
-                <span> <strong><?=$counter ?? $error ?></strong></span>
+                <span> <strong><?=$counter ?></strong></span>
             </p>
         </div>
     </div>
