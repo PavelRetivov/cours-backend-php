@@ -39,7 +39,7 @@ function parseTcpStringAsHttpRequest($contents) {
             $newRow = explode(":", $parsingContents[$i]);
             $headerTitle = trim($newRow[0]);
             $headerBody = trim($newRow[1]);
-            $headers[$headerTitle] = [$headerBody];
+            $headers[] = [$headerTitle, $headerBody];
 
             continue;
         }
