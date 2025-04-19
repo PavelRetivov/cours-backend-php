@@ -10,7 +10,9 @@ function responseFile($domain, $file)
     try {
         echo file_get_contents($domain . $file);
     }catch (Exception $e){
+        http_response_code(404);
         echo json_encode(["status" => "404 Not Found", "message" => "file not found"]);
+
         return;
     }
 }
@@ -22,6 +24,7 @@ if($_SERVER['REQUEST_METHOD'] == "GET"){
     $serverDomain = ["another.shpp.me" => 'another/', "student" => 'student/'];
 
     if(!$uri) {
+        http_response_code(400);
         echo json_encode(["status" => "400 Bad Request", "message" => "url does not exist"]);
 
         return;
@@ -29,15 +32,17 @@ if($_SERVER['REQUEST_METHOD'] == "GET"){
 
     [$requestDomain, $file ] = explode("/", trim($uri, "/"), 2);
 
-    if(!isset($serverDomain[$requestDomain])){
+    try {
+        responseFile($serverDomain[$requestDomain], $file);
+
+    }catch (Exception $e){
+        http_response_code(400);
         echo json_encode(["status" => "400 Bad Request", "message" => "url does not exist"]);
 
         return;
     }
 
-    responseFile($serverDomain[$requestDomain], $file);
-
     return;
 }
-
+http_response_code(400);
 echo json_encode(["status" => "400 Bad Request", "message" => "method dont right"]);
