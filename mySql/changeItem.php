@@ -1,10 +1,12 @@
 <?php
+
 require_once (__DIR__ . '/helper.php');
 
 if($_SERVER['REQUEST_METHOD'] === 'PUT') {
     $conn = connect();
 
     if (!$conn) {
+        http_response_code(500);
         echo '500 Internal Server Error';
 
         return;
@@ -12,11 +14,12 @@ if($_SERVER['REQUEST_METHOD'] === 'PUT') {
 
     $requestString = file_get_contents('php://input');
     $requestArray = json_decode($requestString, true);
-    $changeId = $requestArray['id'];
+    $taskId = $requestArray['id'];
     $changeText = $requestArray['text'];
     $changeChecked = $requestArray['checked'];
 
-    if (!$changeId || !$changeText || $changeChecked === null) {
+    if (empty($taskId) || empty($changeText) || isset($changeChecked)) {
+        http_response_code(400);
         echo '400 Bad Request';
 
         return;
@@ -25,23 +28,28 @@ if($_SERVER['REQUEST_METHOD'] === 'PUT') {
     try{
         $sql = "UPDATE todo_tasks SET text = ?, checked = ? WHERE id = ?";
         $stmt = $conn->prepare($sql);
-        $changeChecked = $changeChecked ? 1 : 0;
-        $stmt->bind_param("ssi", $changeText, $changeChecked, $changeId);
+        $stmt->bind_param("sii", $changeText, $changeChecked, $taskId);
         if(!$stmt->execute()) {
-            echo 'Error: ' . $conn->error;
+            http_response_code(500);
+            echo 'Error: sorry database don`t working';
 
             return;
         }
 
         disconnect($conn);
+        http_response_code(200);
         echo json_encode(["status" => "200 OK", "ok" => true]);
 
         return;
     }catch (Exception $e) {
+        http_response_code(500);
         echo '500 Internal Server Error';
 
         return;
     }
-}
+}else if($_SERVER['REQUEST_METHOD'] !== 'OPTIONS') {
+    http_response_code(400);
+    echo '400 Bad Request';
 
-echo '400 Bad Request';
+    return;
+}

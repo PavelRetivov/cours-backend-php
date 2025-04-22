@@ -6,8 +6,10 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
     $requestString = file_get_contents('php://input');
     $requestArray = json_decode($requestString, true);
 
-    if(!isset($requestArray['login']) && !isset($requestArray['pass'])) {
+    if(empty($requestArray['login']) && empty($requestArray['pass'])) {
+        http_response_code(400);
         echo '400 Bad Request';
+
         return;
     }
 
@@ -15,7 +17,9 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
     $requestPassword = $requestArray['pass'];
 
     if(!$requestLogin || !$requestPassword) {
+        http_response_code(400);
         echo"status: 400 Bad Request, message: login or password is empty";
+
         return;
     }
 
@@ -26,7 +30,8 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bind_param("s", $requestLogin);
 
         if(!$stmt->execute()) {
-            echo 'Error: ' . $conn->error;
+            http_response_code(500);
+            echo 'Error: sorry database don`t working';
 
             return;
         }
@@ -34,6 +39,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
         $count = $stmt->get_result()->fetch_row();
 
         if($count[0] > 0) {
+            http_response_code(400);
             echo 'user with this login already exists';
 
             return;
@@ -45,17 +51,25 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bind_param("ss", $requestLogin, $hashedPassword);
 
         if(!$stmt->execute()) {
-        echo 'Error: ' . $conn->error;
+            http_response_code(500);
+            echo 'Error: sorry database don`t working';
 
             return;
         }
 
+        http_response_code(200);
         echo json_encode(['ok' => true]);
 
         return;
     }catch (PDOException $e){
-        die(json_encode(["error" => $e->getMessage()]));
-    }
-}
+        http_response_code(500);
+        echo 'Error: sorry database don`t working';
 
-echo '400 Bad Request';
+        return;
+    }
+}else if($_SERVER['REQUEST_METHOD'] !== 'OPTIONS') {
+    http_response_code(400);
+    echo '400 Bad Request';
+
+    return;
+}

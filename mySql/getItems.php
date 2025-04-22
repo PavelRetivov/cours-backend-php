@@ -8,7 +8,8 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
     $userId = $_SESSION['user_id'];
 
     if(!$conn) {
-        echo '500 Internal Server Error';
+        http_response_code(500);
+        echo 'Error: sorry database don`t working';
 
         return;
     }
@@ -19,7 +20,8 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
         $smth->bind_param("i", $userId);
 
         if(!$smth->execute()) {
-            echo 'Error: ' . $conn->error;
+            http_response_code(500);
+            echo 'Error: sorry database don`t working';
 
             return;
         }
@@ -27,7 +29,8 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
         $todoTaskUserMysqlResult = $smth->get_result();
         disconnect($conn);
     }catch (Exception $e) {
-        echo '500 Internal Server Error';
+        http_response_code(500);
+        echo 'Error: sorry database don`t working';
 
         return;
     }
@@ -38,13 +41,17 @@ if($_SERVER['REQUEST_METHOD'] === 'GET') {
     },$todoTaskUserMysqlResult->fetch_all(MYSQLI_ASSOC));
 
     if (!$todoTaskUser) {
-        echo 'Error: ' . $conn->error;
+        http_response_code(500);
+        echo 'Error: sorry database don`t working';
 
         return;
     }
 
     echo json_encode($todoTaskUser);
     return;
-}
+}else if($_SERVER['REQUEST_METHOD'] !== 'OPTIONS') {
+    http_response_code(400);
+    echo '400 Bad Request';
 
-echo '400 Bad Request';
+    return;
+}

@@ -1,10 +1,12 @@
 <?php
+
 require_once (__DIR__ . '/helper.php');
 
 if($_SERVER['REQUEST_METHOD'] === 'DELETE') {
     $conn = connect();
 
     if (!$conn) {
+        http_response_code(500);
         echo '500 Internal Server Error';
 
         return;
@@ -14,7 +16,8 @@ if($_SERVER['REQUEST_METHOD'] === 'DELETE') {
     $requestArray = json_decode($requestString, true);
     $deleteId = $requestArray['id'];
 
-    if (!$deleteId) {
+    if (empty($deleteId)) {
+        http_response_code(400);
         echo '400 Bad Request';
 
         return;
@@ -25,7 +28,8 @@ if($_SERVER['REQUEST_METHOD'] === 'DELETE') {
         $stmt = $conn->prepare($sql);
         $stmt->bind_param("i", $deleteId);
         if(!$stmt->execute()) {
-            echo 'Error: ' . $conn->error;
+            http_response_code(500);
+            echo 'Error: sorry database don`t working';
 
             return;
         }
@@ -35,8 +39,14 @@ if($_SERVER['REQUEST_METHOD'] === 'DELETE') {
 
         return;
     }catch (Exception $e) {
-        echo '500 Internal Server Error';
+        http_response_code(500);
+        echo 'Error: sorry database don`t working';
 
         return;
     }
+}else if($_SERVER['REQUEST_METHOD'] !== 'OPTIONS') {
+    http_response_code(400);
+    echo '400 Bad Request';
+
+    return;
 }

@@ -16,33 +16,40 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
     $requestAddItem = $requestArray['text'];
     $userId = $_SESSION['user_id'];
 
-    if (!$requestAddItem || !$userId) {
-        echo '400 Bad Request';
+    if (empty($requestAddItem) || empty($userId)) {
+        http_response_code(400);
+        echo $userId . '400 Bad Request';
 
         return;
     }
     try {
-        $sql = "INSERT INTO todo_tasks (text, checked, user_id) VALUES (?, '0', ?)";
+        $sql = "INSERT INTO todo_tasks (text, checked, user_id) VALUES (?, false, ?)";
         $stmt = $conn->prepare($sql);
         $user = 2;
         $stmt->bind_param("si", $requestAddItem, $userId);
 
         if (!$stmt->execute()) {
-            echo 'Error: ' . $conn->error;
+            http_response_code(500);
+            echo 'Error: sorry database don`t working';
 
             return;
         }
 
+        http_response_code(200);
         echo json_encode(["status" => "200 OK", "id" => $conn->insert_id]);
         disconnect($conn);
 
         return;
     } catch (Exception $e) {
-        echo $conn->error;
+        http_response_code(500);
+        echo 'Error: sorry database don`t working';
 
         return;
 
     }
-}
+}else if($_SERVER['REQUEST_METHOD'] !== 'OPTIONS') {
+    http_response_code(400);
+    echo '400 Bad Request';
 
-echo '400 Bad Request';
+    return;
+}

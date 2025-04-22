@@ -1,10 +1,10 @@
 <?php
+
 require_once (__DIR__ . '/../config/config.php');
 
 function connect()
-
 {
-    global $config;
+    $config = getConfigDataBase();
 
     try {
         $conn = new mysqli($config['host'], $config['username'], $config['password'], $config['dbname']);
